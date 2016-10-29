@@ -191,6 +191,7 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
         foreach ($rows as $row) {
             $tableOptions = $this->getTableOptions($row[0]);
             $table = new Table($row[0], $tableOptions, $this);
+            $table->setIndexes($this->getIndexes($row[0], false));
             $tables[$row[0]] = $table;
         }
 
@@ -533,17 +534,22 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
      * Get an array of indexes from a particular table.
      *
      * @param string $tableName Table Name
+     * @param boolean $lowercase
      * @return array
      */
-    protected function getIndexes($tableName)
+    public function getIndexes($tableName, $lowercase = true)
     {
         $indexes = array();
         $rows = $this->fetchAll(sprintf('SHOW INDEXES FROM %s', $this->quoteTableName($tableName)));
         foreach ($rows as $row) {
             if (!isset($indexes[$row['Key_name']])) {
-                $indexes[$row['Key_name']] = array('columns' => array());
+                $indexes[$row['Key_name']] = array(
+                    'columns' => array(),
+                    'unique' => $row['Non_unique'] == 0 ?  1 : 0,
+                    'fulltext' => $row['INDEX_TYPE'] == 'fulltext' ? 1 : 0
+                );
             }
-            $indexes[$row['Key_name']]['columns'][] = strtolower($row['Column_name']);
+            $indexes[$row['Key_name']]['columns'][] = ($lowercase) ? strtolower($row['Column_name']) : $row['Column_name'];
         }
         return $indexes;
     }
@@ -804,7 +810,8 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
                 return array('name' => 'text');
                 break;
             case static::PHINX_TYPE_BINARY:
-                return array('name' => 'binary', 'limit' => $limit ? $limit : 255);
+            case static::PHINX_TYPE_VARBINARY:
+                return array('name' => $type, 'limit' => $limit ? $limit : 255);
                 break;
             case static::PHINX_TYPE_BLOB:
                 if ($limit) {
@@ -856,6 +863,9 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
                 break;
             case static::PHINX_TYPE_FLOAT:
                 return array('name' => 'float');
+                break;
+            case static::PHINX_TYPE_DOUBLE:
+                return array('name' => 'double');
                 break;
             case static::PHINX_TYPE_DECIMAL:
                 return array('name' => 'decimal');

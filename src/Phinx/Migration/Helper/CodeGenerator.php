@@ -155,4 +155,21 @@ class CodeGenerator
 
         return "->addForeignKey({$columnsDef}, '{$fk->getReferencedTable()->getName()}', {$refColumnsDef})";
     }
+
+    public static function buildIndexString($index, $name)
+    {
+        $command =  "array('" . implode("', '", $index['columns']) . "')";
+
+        $command .= ", array('name' => '{$name}'";
+
+        if (isset($index['fulltext']) && $index['fulltext']) {
+            $command .= ", 'type' => 'fulltext'";
+        }
+
+        if (isset($index['unique']) && $index['unique']) {
+            $command .= ", 'unique' => true";
+        }
+
+        return $command . ')';
+    }
 }
