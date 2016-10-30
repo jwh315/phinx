@@ -546,11 +546,30 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
                 $indexes[$row['Key_name']] = array(
                     'columns' => array(),
                     'unique' => $row['Non_unique'] == 0 ?  1 : 0,
-                    'fulltext' => $row['INDEX_TYPE'] == 'fulltext' ? 1 : 0
+                    'fulltext' => strtolower($row['Index_type']) == 'fulltext' ? 1 : 0
                 );
             }
+
+            if ($row['Sub_part'] !== null) {
+                $indexes[$row['Key_name']]['limit'] = $row['Sub_part'];
+                $indexes[$row['Key_name']]['limit_col'] = $row['Column_name'];
+            }
+
             $indexes[$row['Key_name']]['columns'][] = ($lowercase) ? strtolower($row['Column_name']) : $row['Column_name'];
         }
+
+        //if index has a limit we need to push the limit column to the end of the array so it matches the create stmt
+        foreach ($indexes as $key_name => $index) {
+            if ($index['limit']) {
+                foreach ($index['columns'] as $key => $column) {
+                    if ($column == $index['limit_col']) {
+                        unset($indexes[$key_name]['columns'][$key]);
+                    }
+                }
+                $indexes[$key_name]['columns'][] = $index['limit_col'];
+            }
+        }
+
         return $indexes;
     }
 
@@ -1184,13 +1203,20 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
         $rows = $this->fetchAll(sprintf('SHOW COLUMNS IN `%s`', $tableName));
         $pkFieldNames = array();
         $isPkAutoIncrement = false;
+        $hasIdField = false;
         foreach ($rows as $row) {
             if ($row['Key'] == 'PRI') {
                 $pkFieldNames[] = $row['Field'];
                 if ($row['Extra'] == 'auto_increment') {
                     $isPkAutoIncrement = true;
                 }
+            } else if (strtolower($row['Field']) == 'id') {
+                $hasIdField = true;
             }
+        }
+
+        if (!count($pkFieldNames) && $hasIdField) {
+            return array('id' => false);
         }
 
         // new Table('user');

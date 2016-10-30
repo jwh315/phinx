@@ -25,7 +25,7 @@ class CodeGenerator
             return false;
         }
 
-        if ($column->getName() == 'id') {
+        if ($column->getName() == 'id' && !isset($options['id'])) {
 
             return true;
         }
@@ -168,6 +168,10 @@ class CodeGenerator
 
         if (isset($index['unique']) && $index['unique']) {
             $command .= ", 'unique' => true";
+        }
+
+        if (isset($index['limit']) && $index['limit']) {
+            $command .= ", 'limit' => {$index['limit']}";
         }
 
         return $command . ')';
