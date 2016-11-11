@@ -537,7 +537,7 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
      * @param boolean $lowercase
      * @return array
      */
-    public function getIndexes($tableName, $lowercase = true)
+    public function getIndexes($tableName)
     {
         $indexes = array();
         $rows = $this->fetchAll(sprintf('SHOW INDEXES FROM %s', $this->quoteTableName($tableName)));
@@ -552,10 +552,10 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
 
             if ($row['Sub_part'] !== null) {
                 $indexes[$row['Key_name']]['limit'] = $row['Sub_part'];
-                $indexes[$row['Key_name']]['limit_col'] = $row['Column_name'];
+                $indexes[$row['Key_name']]['limit_col'] = strtolower($row['Column_name']);
             }
 
-            $indexes[$row['Key_name']]['columns'][] = ($lowercase) ? strtolower($row['Column_name']) : $row['Column_name'];
+            $indexes[$row['Key_name']]['columns'][] = strtolower($row['Column_name']);
         }
 
         //if index has a limit we need to push the limit column to the end of the array so it matches the create stmt
@@ -882,9 +882,6 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
                 break;
             case static::PHINX_TYPE_FLOAT:
                 return array('name' => 'float');
-                break;
-            case static::PHINX_TYPE_DOUBLE:
-                return array('name' => 'double');
                 break;
             case static::PHINX_TYPE_DECIMAL:
                 return array('name' => 'decimal');

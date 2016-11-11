@@ -45,31 +45,37 @@ class CodeGenerator
      */
     public static function buildTableOptionsString(Table $table)
     {
-        $stringParts = array();
-        $options = $table->getOptions();
 
-        foreach ($options as $option => $value) {
-            // TODO: move common code or probably replace with something cooler
-            // like var_export() but with friendly output
+        if (is_array($table->getIndexes()) && !array_key_exists('PRIMARY', $table->getIndexes())) {
+            //account for tables that do not have a primary key
+            return "array('id' => false)";
+        } else {
+            $stringParts = array();
+            $options = $table->getOptions();
 
-            if (is_numeric($value)) {
-                $string = "'{$option}'=>$value";
-            } elseif (is_bool($value)) {
-                $string = $value ? "'{$option}'=>true" : "'{$option}'=>false";
-            } elseif (is_array($value)) {
-                $array = array();
-                foreach ($value as $element) {
-                    $array[] = "'{$element}'";
+            foreach ($options as $option => $value) {
+                // TODO: move common code or probably replace with something cooler
+                // like var_export() but with friendly output
+
+                if (is_numeric($value)) {
+                    $string = "'{$option}'=>$value";
+                } elseif (is_bool($value)) {
+                    $string = $value ? "'{$option}'=>true" : "'{$option}'=>false";
+                } elseif (is_array($value)) {
+                    $array = [ ];
+                    foreach ($value as $element) {
+                        $array[] = "'{$element}'";
+                    }
+                    $string = "'{$option}'=>array(" . implode(", ", $array) . ")";
+                } else {
+                    $string = "'{$option}'=>'$value'";
                 }
-                $string = "'{$option}'=>array(".implode(", ", $array).")";
-            } else {
-                $string = "'{$option}'=>'$value'";
+
+                $stringParts[] = $string;
             }
 
-            $stringParts[] = $string;
+            return "array(" . implode(", ", $stringParts) . ")";
         }
-
-        return "array(".implode(", ", $stringParts).")";
     }
 
     /**
