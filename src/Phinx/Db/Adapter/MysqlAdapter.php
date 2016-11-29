@@ -390,6 +390,14 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
                 $column->setIdentity(true);
             }
 
+            if ($phinxType['scale'] !== null) {
+                $column->setScale($phinxType['scale']);
+            }
+
+            if ($phinxType['precision'] !== null) {
+                $column->setPrecision($phinxType['precision']);
+            }
+
             if (in_array($phinxType['name'], ['char', 'string', 'text'])) {
                 if ($columnInfo['Collation']) {
                     $column->setCollation($columnInfo['Collation']);
@@ -947,6 +955,7 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
             $limit = null;
             $precision = null;
             $values = null;
+            $scale = null;
             $type = $matches[1];
             if (count($matches) > 2) {
                 $limit = $matches[3] ? (int) $matches[3] : null;
@@ -954,6 +963,12 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
             if (count($matches) > 4) {
                 $precision = (int) $matches[5];
             }
+
+            if ($type == 'decimal') {
+                $precision = (int) $matches[3];
+                $scale = (int) $matches[5];
+            }
+
             if ($type === 'tinyint' && $limit === 1) {
                 $type = static::PHINX_TYPE_BOOLEAN;
                 $limit = null;
@@ -1038,6 +1053,7 @@ class MysqlAdapter extends PdoAdapter implements AdapterInterface
                 'limit' => $limit,
                 'precision' => $precision,
                 'values' => $values,
+                'scale' => $scale,
             );
         }
     }
