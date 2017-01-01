@@ -17,9 +17,9 @@ class Schema extends AbstractMigration
         <?php endforeach; ?>
 
         <?php foreach($table->getIndexes() as $name => $index): ?>
-            <? if ($name !== 'PRIMARY'): ?>
+            <?php if ($name !== 'PRIMARY'): ?>
                 ->addIndex(<?php echo CodeGenerator::buildIndexString($index, $name) ;?>)
-            <? endif; ?>
+            <?php endif; ?>
         <?php endforeach; ?>
         ->create();
 
